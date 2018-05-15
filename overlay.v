@@ -86,9 +86,9 @@ pixel_proc pixel_proc_1(
 	.vpg_de(HDMI_TX_DE),
 	.vpg_hs(HDMI_TX_HS),
 	.vpg_vs(HDMI_TX_VS),
-//	.vpg_r(HDMI_TX_D[23:16]),
-//	.vpg_g(HDMI_TX_D[15:8]),
-//	.vpg_b(HDMI_TX_D[7:0]),
+	// .vpg_r(HDMI_TX_D[23:16]),
+	// .vpg_g(HDMI_TX_D[15:8]),
+	// .vpg_b(HDMI_TX_D[7:0]),
 	.pixel_red(pixel_red),
 	.pixel_green(pixel_green),
 	.pixel_blue(pixel_blue)	);
@@ -124,44 +124,59 @@ end
 wire rom_clk;
 reg rom_rden;
 wire rom_dataIn;
-reg ovelay_enable;
+reg overlay_enable;
 reg [10:0] rom_address=0;
 wire[10:0] rom_address_offset;
 reg [10:0] reg_rom_address_offset=0;
 
+//assign reg_rom_address_offset =(overlay_enable == 1'b1 )?rom_address_offset:0;
+
+
 reg [4:0] font_horiz = 0;
 reg [5:0] font_vert = 0;
 
+parameter x_pos = 300;
 
 reg [10:0] font_counter= 0;
-always @(posedge HDMI_TX_CLK)
+always @(*)
 begin
-	if(ovelay_enable == 1'b1)
+		
+	if(x_counter == x_pos )
 	begin
-	rom_address <= rom_address +1;	
+		overlay_enable <=1'b1;
+		
+		
 	end
-end
-assign rom_clk = (ovelay_enable == 1'b1)?HDMI_TX_CLK:1'b0;
+	else if(x_counter > x_pos && x_counter < (x_pos+20) && font_counter < 512)
+	begin
+		font_counter = font_counter + 1;
+		rom_address <= rom_address +1;
+		
+	
+	end
+	else if(font_counter == 512)
+	begin
+		font_counter <=0;
+		rom_address <= rom_address_offset;
+	end
+	else if(x_counter == (x_pos + 20))
+	begin
+	overlay_enable <=1'b0;
+	rom_address <= rom_address_offset;
+	end
+	
 
-//assign rom_clk = HDMI_TX_CLK;
+
+end
+assign rom_clk = (overlay_enable == 1'b1)?HDMI_TX_CLK:1'b0;
+
+
 
 ///instantiating rom
-
-
-always @(posedge rom_clk)
-begin
-	font_counter <= font_counter +1;
-	
-	
-
-
-end
-
-
 font_rom rom1(
 		.address(rom_address),
-		.clock(HDMI_TX_CLK),
-		.rden(1'b1),
+		.clock(rom_clk),
+		
 		.q(rom_dataIn)
 
 
@@ -177,13 +192,13 @@ switch_decoder sw_dec_1
 );
 
 // bit repitor
-wire      [23:0] obr_in;
+wire      [23:0] obr_out;
 overlayBitRepiter obr(
 
- .clk(HDMI_TX_CLK), //try making conditional clock signal
+  //try making conditional clock signal
   .dataIn(rom_dataIn), //should be connected to rom
 
-  .dataOut(obr_in) //should be connected to 
+  .dataOut(obr_out) //should be connected to 
 
 
 
@@ -193,9 +208,9 @@ overlayBitRepiter obr(
 // bit combiner connect
 bit_combiner bitcon(
 	.PPE_IN({ppe_red,ppe_green,ppe_blue}), 			// Pixel Processing Engine
-	.OBR_IN(obr_in),				// Overlay Bit Repeater
+	.OBR_IN(obr_out),				// Overlay Bit Repeater
 	//input clk,							// clock in from higher entity
-	.overlay_enable(ovelay_enable),			// set this enable when you want this exact pixel produce an overlay
+	.overlay_enable(overlay_enable),			// set this enable when you want this exact pixel produce an overlay
 	
 	.pixel_data_out(HDMI_TX_D)	// output pixel colour value
 );
@@ -207,17 +222,42 @@ reg [11:0] y_counter = 0;
 
 //increseing x and y counter and controlling pattern
 
-// Y counter block
-
 always @(negedge HDMI_TX_HS)
 begin
-	y_counter <= y_counter + 1;
-		
-	if(y_counter > 1124) 
+	if(y_counter == 1124)
 	begin
 		y_counter <= 0;
 		
 	end
+	else
+	begin
+		y_counter <= y_counter + 1'b1;
+	end
+end
+
+
+
+//// x_counter block
+
+
+
+always @(posedge HDMI_TX_CLK)
+begin
+    if(!HDMI_TX_HS)
+    begin
+		x_counter <=0;
+        
+
+    end
+    else 
+    begin
+        
+        x_counter <=x_counter + 1'b1;
+
+    end
+
+
+
 end
 
 ///////////////////Patten Generator ///////////////////////
@@ -226,72 +266,34 @@ end
 
 reg [11:0] counter_pat= 0;
 
-//// x_counter block
-always @(*)
-begin
-	if(font_counter == 512)
-	begin
-		ovelay_enable <=1'b0;
-		
-		
-	end
-	else if(x_counter > 400 && y_counter >500)
-	begin
-		ovelay_enable <=1'b1;
-	end
-
-	
-end
-
-
-always @(posedge HDMI_TX_CLK)
-begin
-    if(HDMI_TX_DE)
-		begin
-			x_counter <=x_counter + 1;
-		end
-    else 
-		begin
-        x_counter <=0;
-		end
-end
-
 always @(negedge HDMI_TX_VS)
 begin
-		counter_pat <=counter_pat + 1;
-		reg_rom_address_offset <= rom_address_offset;
-	if(counter_pat == 250 )
+		if(counter_pat == 255)
 		begin
 			counter_pat <= 0;
 		end
-		else if(ppe_red <= 250)
-			begin
-				ppe_red <=counter_pat;
-				ppe_green<= 0;
-				ppe_blue <= 0;
-				
-			end
-		else if( ppe_green  <= 250)
-			begin
-				ppe_red <= 255;
-				ppe_green<= counter_pat;
-				ppe_blue <= 0;
-				
-			end
-		else if( ppe_blue <= 250)
-			begin
-				ppe_red <= 255;
-				ppe_green<= 255;
-				ppe_blue <= counter_pat;
-				
-			end
+		else if(counter_pat <255)
+		begin
+				ppe_red <= counter_pat;
+				ppe_green<= counter_pat -1;
+				ppe_blue <= counter_pat -1;
+		
+		end
 		else 
 			begin
-				ppe_red <= 255;
-				ppe_green<= 255;
-				ppe_blue <= 255;
-				counter_pat <= 0;
+				counter_pat <=counter_pat +1;
+				
+				ppe_red <= 10;
+				ppe_green<= 10;
+				ppe_blue <= 10;
 			end
+	
+	
+
+
+
+
+
 end
 
 endmodule
