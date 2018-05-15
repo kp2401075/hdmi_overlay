@@ -1,13 +1,8 @@
 module overlay(
-
-    
-
       ///////// FPGA /////////
       input              FPGA_CLK1_50,
       input              FPGA_CLK2_50,
       input              FPGA_CLK3_50,
-
-     
 
       ///////// HDMI /////////
       inout              HDMI_I2C_SCL,
@@ -23,7 +18,6 @@ module overlay(
       input              HDMI_TX_INT,
       output             HDMI_TX_VS,
 
-
       ///////// KEY /////////
       input       [1:0]  KEY,
 
@@ -33,8 +27,6 @@ module overlay(
       ///////// SW /////////
       input       [3:0]  SW
 );
-
-
 
 //=======================================================
 //  REG/WIRE declarations
@@ -46,17 +38,20 @@ reg				en_150;
 wire				vpg_mode_change;
 wire	[3:0]		vpg_mode;
 wire 			   AUD_CTRL_CLK;
+
 //Video Pattern Generator
 wire	[3:0]		vpg_disp_mode;
 wire				vpg_pclk;
 wire				vpg_de, vpg_hs, vpg_vs;
 wire	[23:0]	vpg_data;
 
+wire 	[7:0] 	pixel_red ;
+wire 	[7:0]  	pixel_green;
+wire 	[7:0]  	pixel_blue;	
 
-reg [7:0] pixel_red = 100;
-reg [7:0]  pixel_green= 100;
-reg [7:0]  pixel_blue=100;	
-
+reg 	[7:0] 	ppe_red ;
+reg 	[7:0]  	ppe_green;
+reg 	[7:0]  	ppe_blue;	
 
 //=======================================================
 //  Structural coding
@@ -64,6 +59,7 @@ reg [7:0]  pixel_blue=100;
 assign LED[3:0] = vpg_mode;
 //assign reset_n = 1'b1;
 assign LED[7] = counter_1200k[12];
+
 //system clock
 sys_pll sys_pll_1 (
 	.refclk(FPGA_CLK1_50),
@@ -78,6 +74,8 @@ assign vpg_mode_change = 1'b0;
 assign vpg_mode = `FHD_1920x1080p60;
 
 
+
+
 //pixel Engine
 pixel_proc pixel_proc_1(
 	.clk_50(FPGA_CLK2_50),
@@ -88,9 +86,9 @@ pixel_proc pixel_proc_1(
 	.vpg_de(HDMI_TX_DE),
 	.vpg_hs(HDMI_TX_HS),
 	.vpg_vs(HDMI_TX_VS),
-	.vpg_r(HDMI_TX_D[23:16]),
-	.vpg_g(HDMI_TX_D[15:8]),
-	.vpg_b(HDMI_TX_D[7:0]),
+//	.vpg_r(HDMI_TX_D[23:16]),
+//	.vpg_g(HDMI_TX_D[15:8]),
+//	.vpg_b(HDMI_TX_D[7:0]),
 	.pixel_red(pixel_red),
 	.pixel_green(pixel_green),
 	.pixel_blue(pixel_blue)	);
@@ -120,51 +118,180 @@ begin
 	end
 end
 
+
+
+///////////////////////font engine /////////////////////////
+wire rom_clk;
+reg rom_rden;
+wire rom_dataIn;
+reg ovelay_enable;
+reg [10:0] rom_address=0;
+wire[10:0] rom_address_offset;
+reg [10:0] reg_rom_address_offset=0;
+
+reg [4:0] font_horiz = 0;
+reg [5:0] font_vert = 0;
+
+
+reg [10:0] font_counter= 0;
+always @(posedge HDMI_TX_CLK)
+begin
+	if(ovelay_enable == 1'b1)
+	begin
+	rom_address <= rom_address +1;	
+	end
+end
+assign rom_clk = (ovelay_enable == 1'b1)?HDMI_TX_CLK:1'b0;
+
+//assign rom_clk = HDMI_TX_CLK;
+
+///instantiating rom
+
+
+always @(posedge rom_clk)
+begin
+	font_counter <= font_counter +1;
+	
+	
+
+
+end
+
+
+font_rom rom1(
+		.address(rom_address),
+		.clock(HDMI_TX_CLK),
+		.rden(1'b1),
+		.q(rom_dataIn)
+
+
+
+
+);
+//instance of switch decoder
+switch_decoder sw_dec_1
+(			.switch_bus(SW),				// "real world"slide switch inputs
+			.clk_50MHz(HDMI_TX_CLK),						// clock input		
+			
+			.offset(rom_address_offset)			// output register
+);
+
+// bit repitor
+wire      [23:0] obr_in;
+overlayBitRepiter obr(
+
+ .clk(HDMI_TX_CLK), //try making conditional clock signal
+  .dataIn(rom_dataIn), //should be connected to rom
+
+  .dataOut(obr_in) //should be connected to 
+
+
+
+
+);
+
+// bit combiner connect
+bit_combiner bitcon(
+	.PPE_IN({ppe_red,ppe_green,ppe_blue}), 			// Pixel Processing Engine
+	.OBR_IN(obr_in),				// Overlay Bit Repeater
+	//input clk,							// clock in from higher entity
+	.overlay_enable(ovelay_enable),			// set this enable when you want this exact pixel produce an overlay
+	
+	.pixel_data_out(HDMI_TX_D)	// output pixel colour value
+);
+
+
+
+reg [11:0] x_counter = 0;
+reg [11:0] y_counter = 0;
+
+//increseing x and y counter and controlling pattern
+
+// Y counter block
+
+always @(negedge HDMI_TX_HS)
+begin
+	y_counter <= y_counter + 1;
+		
+	if(y_counter > 1124) 
+	begin
+		y_counter <= 0;
+		
+	end
+end
+
+///////////////////Patten Generator ///////////////////////
+
 //coutter and genarating custom patter
 
 reg [11:0] counter_pat= 0;
 
+//// x_counter block
+always @(*)
+begin
+	if(font_counter == 512)
+	begin
+		ovelay_enable <=1'b0;
+		
+		
+	end
+	else if(x_counter > 400 && y_counter >500)
+	begin
+		ovelay_enable <=1'b1;
+	end
+
+	
+end
+
+
 always @(posedge HDMI_TX_CLK)
 begin
-	
-	if(!HDMI_TX_HS)
-	begin
-	counter_pat <=0;
-	
-	end
-	else
-	begin
-		counter_pat <=counter_pat+1'b1;
-		if(counter_pat < 100)
-			begin
-				pixel_red <=0;
-				pixel_green<= 255;
-				pixel_blue <= 0;
-				
-			end
-		else if(counter_pat >100 && counter_pat  < 300)
-			begin
-				pixel_red <= 255;
-				pixel_green<= 0;
-				pixel_blue <= 50;
-				
-			end
-		else if(counter_pat >300 && counter_pat  < 500)
-			begin
-				pixel_red <= 0;
-				pixel_green<= 0;
-				pixel_blue <= 255;
-				
-			end
-		else
-			begin
-				pixel_red <= 255;
-				pixel_green<= 255;
-				pixel_blue <= 255;
-			end
-	end
-	
+    if(HDMI_TX_DE)
+		begin
+			x_counter <=x_counter + 1;
+		end
+    else 
+		begin
+        x_counter <=0;
+		end
+end
 
+always @(negedge HDMI_TX_VS)
+begin
+		counter_pat <=counter_pat + 1;
+		reg_rom_address_offset <= rom_address_offset;
+	if(counter_pat == 250 )
+		begin
+			counter_pat <= 0;
+		end
+		else if(ppe_red <= 250)
+			begin
+				ppe_red <=counter_pat;
+				ppe_green<= 0;
+				ppe_blue <= 0;
+				
+			end
+		else if( ppe_green  <= 250)
+			begin
+				ppe_red <= 255;
+				ppe_green<= counter_pat;
+				ppe_blue <= 0;
+				
+			end
+		else if( ppe_blue <= 250)
+			begin
+				ppe_red <= 255;
+				ppe_green<= 255;
+				ppe_blue <= counter_pat;
+				
+			end
+		else 
+			begin
+				ppe_red <= 255;
+				ppe_green<= 255;
+				ppe_blue <= 255;
+				counter_pat <= 0;
+			end
 end
 
 endmodule
