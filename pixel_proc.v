@@ -41,28 +41,17 @@ module pixel_proc(
 	vpg_de,
 	vpg_hs,
 	vpg_vs,
-	vpg_r,
-	vpg_g,
-	vpg_b,
-	pixel_red,
-	pixel_green,
-	pixel_blue
+
 );
 
 input					clk_50;
 input					reset_n;
 input		[3:0]		mode;
-//input				mode_change;
+
 output				vpg_pclk;
 output				vpg_de;
 output				vpg_hs;
 output				vpg_vs;
-output 	[7:0]		vpg_r;
-output   [7:0]		vpg_g;
-output 	[7:0]		vpg_b;
-input 	[7:0] 	pixel_red;
-input 	[7:0] 	pixel_green;
-input 	[7:0] 	pixel_blue;
 
 
 //=======================================================
@@ -127,17 +116,12 @@ pixel_proc_engine u_vga_generator (
 	.v_end(v_end), 
 	.vga_hs(vpg_hs),
 	.vga_vs(vpg_vs),           
-	.vga_de(vpg_de),
-	.vga_r(vpg_r),
-	.vga_g(vpg_g),
-	.vga_b(vpg_b),
-	.pixel_red(pixel_red),
-	.pixel_green(pixel_green),
-	.pixel_blue(pixel_blue)	
+	.vga_de(vpg_de)
+
 	);
 	
 assign   {h_total, h_sync, h_start, h_end} = {12'd2199, 12'd43, 12'd189, 12'd2109}; 
 assign	{v_total, v_sync, v_start, v_end} = {12'd1124, 12'd4, 12'd40, 12'd1120}; 
-//assign 	{v_active_14, v_active_24, v_active_34} = {12'd310, 12'd580, 12'd850};
+
 		
 endmodule
