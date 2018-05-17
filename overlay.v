@@ -101,8 +101,25 @@ i2c_hdmi_setup I2c_master (
 	.HDMI_TX_INT(HDMI_TX_INT)
 	 );
 
+//position change block
 
+always @(posedge en_150)
+begin
+	if(!KEY[1])
+		begin
+			x_pos <= x_pos + 10;
+			y_pos <= y_pos + 18;
+		end
+	else
+		begin
+			x_pos <= x_pos;
+			y_pos <= y_pos;
+		end
 
+end
+	 
+	 
+	 
 always@(posedge pll_1200k or negedge reset_n)
 begin
 	if (!reset_n)
@@ -128,7 +145,6 @@ reg [10:0] rom_address=0;
 wire[10:0] rom_address_offset;
 reg [10:0] reg_rom_address_offset=0;
 
-//assign reg_rom_address_offset =(overlay_enable == 1'b1 )?rom_address_offset:0;
 
 
 reg [4:0] font_horiz = 0;
@@ -141,17 +157,18 @@ reg [5:0] font_vert = 0;
 //font counter and offset counter
 always @(posedge HDMI_TX_CLK)
 begin
+	
 	if(overlay_enable && font_counter< 512 )
 	begin
 	
-		font_counter <= font_counter +1;
-		rom_address <= rom_address+1; 
-	
+		rom_address <= (reg_rom_address_offset + font_counter); 
+		font_counter <= font_counter +1'b1;
+		
 	end
-	else if(font_counter == 512)
+	else if(font_counter == 512 || (!HDMI_TX_VS))
 	begin
 		font_counter <= 0;
-		rom_address <= rom_address_offset;
+		rom_address <= reg_rom_address_offset;
 	
 	end
 
@@ -163,27 +180,35 @@ end
 
 
 
-parameter x_pos = 300;
-parameter y_pos = 500;
+reg [10:0] x_pos = 300;
+reg [10:0] y_pos = 500;
 
 reg [10:0] font_counter= 0;
 always @(*)
 begin
 		
-	if(x_counter == x_pos )
+	if(x_counter >= x_pos  && x_counter < (x_pos + 16))
 		begin
-			overlay_enable <=1'b1;
+			if(y_counter >= y_pos && y_counter <(y_pos + 32))
+			begin
+				overlay_enable <=1'b1;
+			end
 		end
-	else if(x_counter == (x_pos + 20)) 
+	else
 		begin
 			overlay_enable <=1'b0;
 		end
-	else if(y_counter == (y_pos + 32))
-		begin
-			overlay_enable <=1'b0;
 		
-		end
-	
+//	else if(x_counter == (x_pos + 20)) 
+//		begin
+//			overlay_enable <=1'b0;
+//		end
+//	else if(y_counter == (y_pos + 32))
+//		begin
+//			overlay_enable <=1'b0;
+//		
+//		end
+//	
 end
 
 //conditional clock signal
@@ -291,6 +316,7 @@ reg [11:0] counter_pat= 0;
 
 always @(negedge HDMI_TX_VS)
 begin
+		reg_rom_address_offset <=rom_address_offset;
 		counter_pat <=counter_pat +1;
 		if(counter_pat == 255)
 			begin
