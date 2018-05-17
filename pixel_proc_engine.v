@@ -46,13 +46,8 @@ module pixel_proc_engine(
   input			[11:0]	v_active_34, 
   output	reg				vga_hs,             
   output	reg				vga_vs,           
-  output	reg				vga_de,
-  output	reg	[7:0]		vga_r,
-  output	reg	[7:0]		vga_g,
-  output	reg	[7:0]		vga_b,
-	input		[7:0]		pixel_red,
-	input		[7:0]		pixel_green,
-	input		[7:0]		pixel_blue
+  output	reg				vga_de
+
   
 );
 
@@ -164,9 +159,8 @@ begin
 		vga_de		<=	pre_vga_de;
 		pre_vga_de	<=	v_act && h_act;
     
-		
-		{vga_r, vga_g, vga_b}	<=	{pixel_red,pixel_green,pixel_blue};
-			
+
+//			
 	end
 end	
 
