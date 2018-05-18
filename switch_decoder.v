@@ -4,31 +4,33 @@
 module switch_decoder
 (			input [3:0] switch_bus,				// "real world"slide switch inputs
 			//input clk_50MHz,						// clock input	not required	
-			output [10:0] offset				// output register
+			output [12:0] offset				// output register
 );
 
-reg [10:0] reg_offset;
+reg [12:0] reg_offset;
+assign offset = reg_offset;
+
 always @ (*)
 			begin
 				case(switch_bus)
-						  0:begin reg_offset <= 11'h000; end
-						  1:begin reg_offset <= 11'h200; end
-						  2:begin reg_offset <= 11'h400; end
-						  3:begin reg_offset <= 11'h600; end
-						  4:begin reg_offset <= 11'h800; end
-						  5:begin reg_offset <= 11'ha00; end
-						  6:begin reg_offset <= 11'hc00; end
-						  7:begin reg_offset <= 11'he00; end
-						  8:begin reg_offset <= 11'h1000; end
-						  9:begin reg_offset <= 11'h1200; end
-						 10:begin reg_offset <= 11'h1400; end	//A
-						 11:begin reg_offset <= 11'h1600; end	//B
-						 12:begin reg_offset <= 11'h1800; end	//C
-						 13:begin reg_offset <= 11'h1a00; end	//D
-						 14:begin reg_offset <= 11'h1c00; end	//E
-						 15:begin reg_offset <= 11'h1e00; end	//F
-				  default:begin reg_offset <= 11'h000; end	//0
+						  4'b0000:begin reg_offset <= 000; end
+						  4'b0001:begin reg_offset <= 512; end
+						  4'b0010:begin reg_offset <= 1024; end
+						  4'b0011:begin reg_offset <= 1536; end
+						  4'b0100:begin reg_offset <= 2048; end
+						  4'b0101:begin reg_offset <= 2560; end
+						  4'b0110:begin reg_offset <= 3072; end
+						  4'b0111:begin reg_offset <= 3584; end
+						  4'b1000:begin reg_offset <= 4096; end
+						  4'b1001:begin reg_offset <= 4608; end
+						  4'b1010:begin reg_offset <= 5120; end	//A
+						  4'b1011:begin reg_offset <= 5632; end	//B
+						  4'b1100:begin reg_offset <= 6144; end	//C
+						  4'b1101:begin reg_offset <= 6656; end	//D
+						  4'b1110:begin reg_offset <= 7168; end	//E
+						  4'b1111:begin reg_offset <= 7680; end	//F
+				  default:begin reg_offset <= 0000; end	//0
 				endcase
 			end
-			assign offset = reg_offset;
+			
 endmodule

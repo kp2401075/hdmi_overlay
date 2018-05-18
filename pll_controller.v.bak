@@ -12,13 +12,17 @@ module pll_controller (
 
 `include "vpg.h"
 
-
+//=======================================================
+//  Signal declarations
+//=======================================================
 wire	[17:0]	m_counter, n_counter, c_counter;
 reg	[1:0]		write_count;
 reg	[2:0]		mode_change_d;
 reg	[3:0]		state;
 
-
+//=======================================================
+//  Structural coding
+//=======================================================
 always@(posedge clk or negedge reset_n)
 begin
 	if (!reset_n)

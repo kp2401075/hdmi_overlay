@@ -37,10 +37,10 @@ module pixel_proc(
 	reset_n,
 	mode,
 	//mode_change,
-	vpg_pclk,
-	vpg_de,
-	vpg_hs,
-	vpg_vs,
+	hdmi_pclk,
+	hdmi_de,
+	hdmi_hs,
+	hdmi_vs,
 
 );
 
@@ -48,29 +48,24 @@ input					clk_50;
 input					reset_n;
 input		[3:0]		mode;
 
-output				vpg_pclk;
-output				vpg_de;
-output				vpg_hs;
-output				vpg_vs;
+output				hdmi_pclk;
+output				hdmi_de;
+output				hdmi_hs;
+output				hdmi_vs;
 
 
-//=======================================================
-//  Signal declarations
-//=======================================================
-//=============== PLL reconfigure
+
+////////////// PLL reconfigure
 wire [63:0] reconfig_to_pll, reconfig_from_pll;
 wire        gen_clk_locked;
 wire [31:0] mgmt_readdata, mgmt_writedata;
 wire        mgmt_read, mgmt_write;
 wire [5:0]  mgmt_address;
-//============= assign timing constant  
+///////////// assign timing constant  
 wire  [11:0] h_total, h_sync, h_start, h_end; 
 wire  [11:0] v_total, v_sync, v_start, v_end; 
 
-//=======================================================
-//  Sub-module
-//=======================================================
-//=============== PLL reconfigure
+///////////// PLL reconfigure
 pll_reconfig u_pll_reconfig (
 	.mgmt_clk(clk_50),
 	.mgmt_reset(!reset_n),
@@ -86,7 +81,7 @@ pll_reconfig u_pll_reconfig (
 pll u_pll (
 	.refclk(clk_50),           
 	.rst(!reset_n),              
-	.outclk_0(vpg_pclk), 
+	.outclk_0(hdmi_pclk), 
 	.locked(gen_clk_locked),           
 	.reconfig_to_pll(reconfig_to_pll),  
 	.reconfig_from_pll(reconfig_from_pll) );
@@ -103,8 +98,8 @@ pll_controller u_pll_controller (
 	.mgmt_writedata(mgmt_writedata) );
 
 //=============== pixel ouput
-pixel_proc_engine u_vga_generator (                                    
-	.clk(vpg_pclk),                
+pixel_proc_engine hdmi_signal_generator (                                    
+	.clk(hdmi_pclk),                
 	.reset_n(gen_clk_locked),                                                
 	.h_total(h_total),           
 	.h_sync(h_sync),           
@@ -114,9 +109,9 @@ pixel_proc_engine u_vga_generator (
 	.v_sync(v_sync),            
 	.v_start(v_start),           
 	.v_end(v_end), 
-	.vga_hs(vpg_hs),
-	.vga_vs(vpg_vs),           
-	.vga_de(vpg_de)
+	.hdmi_hs(hdmi_hs),
+	.hdmi_vs(hdmi_vs),           
+	.hdmi_de(hdmi_de)
 
 	);
 	

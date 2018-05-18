@@ -1,35 +1,3 @@
-// --------------------------------------------------------------------
-// Copyright (c) 2007 by Terasic Technologies Inc. 
-// --------------------------------------------------------------------
-//
-// Permission:
-//
-//   Terasic grants permission to use and modify this code for use
-//   in synthesis for all Terasic Development Boards and Altera Development 
-//   Kits made by Terasic.  Other use of this code, including the selling 
-//   ,duplication, or modification of any portion is strictly prohibited.
-//
-// Disclaimer:
-//
-//   This VHDL/Verilog or C/C++ source code is intended as a design reference
-//   which illustrates how these types of functions can be implemented.
-//   It is the user's responsibility to verify their design for
-//   consistency and functionality through the use of formal
-//   verification methods.  Terasic provides no warranty regarding the use 
-//   or functionality of this code.
-//
-// --------------------------------------------------------------------
-//           
-//                     Terasic Technologies Inc
-//                     356 Fu-Shin E. Rd Sec. 1. JhuBei City,
-//                     HsinChu County, Taiwan
-//                     302
-//
-//                     web: http://www.terasic.com/
-//                     email: support@terasic.com
-//
-// --------------------------------------------------------------------
-
 module pixel_proc_engine(                                    
   input						clk,                
   input						reset_n,                                                
@@ -44,16 +12,14 @@ module pixel_proc_engine(
   input			[11:0]	v_active_14, 
   input			[11:0]	v_active_24, 
   input			[11:0]	v_active_34, 
-  output	reg				vga_hs,             
-  output	reg				vga_vs,           
-  output	reg				vga_de
+  output	reg				hdmi_hs,             
+  output	reg				hdmi_vs,           
+  output	reg				hdmi_de
 
   
 );
 
-//=======================================================
-//  Signal declarations
-//=======================================================
+
 reg	[11:0]	h_count;
 
 reg	[11:0]	v_count;
@@ -61,16 +27,13 @@ reg				h_act;
 reg				h_act_d;
 reg				v_act; 
 reg				v_act_d; 
-reg				pre_vga_de;
+reg				pre_hdmi_de;
 wire				h_max, hs_end, hr_start, hr_end;
 wire				v_max, vs_end, vr_start, vr_end;
-//wire				v_act_14, v_act_24, v_act_34;
 reg				boarder;
 reg	[3:0]		color_mode;
 
-//=======================================================
-//  Structural coding
-//=======================================================
+
 assign h_max = h_count == h_total;
 assign hs_end = h_count >= h_sync;
 assign hr_start = h_count == h_start; 
@@ -87,7 +50,7 @@ always @ (posedge clk or negedge reset_n)
 	begin
 		h_act_d	<=	1'b0;
 		h_count	<=	12'b0;
-		vga_hs	<=	1'b1;
+		hdmi_hs	<=	1'b1;
 		h_act		<=	1'b0;
 	end
 	else
@@ -98,13 +61,10 @@ always @ (posedge clk or negedge reset_n)
 			h_count	<=	12'b0;
 		else
 			h_count	<=	h_count + 12'b1;
-
-
 		if (hs_end && !h_max)
-			vga_hs	<=	1'b1;
+			hdmi_hs	<=	1'b1;
 		else
-			vga_hs	<=	1'b0;
-
+			hdmi_hs	<=	1'b0;
 		if (hr_start)
 			h_act		<=	1'b1;
 		else if (hr_end)
@@ -117,7 +77,7 @@ always@(posedge clk or negedge reset_n)
 	begin
 		v_act_d		<=	1'b0;
 		v_count		<=	12'b0;
-		vga_vs		<=	1'b1;
+		hdmi_vs		<=	1'b1;
 		v_act			<=	1'b0;
 		
 	end
@@ -131,11 +91,10 @@ always@(posedge clk or negedge reset_n)
 				v_count	<=	12'b0;
 			else
 				v_count	<=	v_count + 12'b1;
-
 			if (vs_end && !v_max)
-				vga_vs	<=	1'b1;
+				hdmi_vs	<=	1'b1;
 			else
-				vga_vs	<=	1'b0;
+				hdmi_vs	<=	1'b0;
 
 			if (vr_start)
 				v_act <=	1'b1;
@@ -145,22 +104,19 @@ always@(posedge clk or negedge reset_n)
 		end
 	end
 
-//pattern generator and display enable
+// display enable
 always @(posedge clk or negedge reset_n)
 begin
 	if (!reset_n)
 	begin
-		vga_de		<=	1'b0;
-		pre_vga_de	<=	1'b0;
+		hdmi_de		<=	1'b0;
+		pre_hdmi_de	<=	1'b0;
 		boarder		<=	1'b0;		
 	end
 	else
 	begin
-		vga_de		<=	pre_vga_de;
-		pre_vga_de	<=	v_act && h_act;
-    
-
-//			
+		hdmi_de		<=	pre_hdmi_de;
+		pre_hdmi_de	<=	v_act && h_act;		
 	end
 end	
 

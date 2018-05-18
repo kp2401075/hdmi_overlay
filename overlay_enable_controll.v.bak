@@ -1,0 +1,26 @@
+module overlay_enable_controll(
+
+
+
+);
+
+
+
+////////overlay enable controll block
+always @(*)
+begin
+		
+	if(x_counter >= x_pos  && x_counter < (x_pos + 16))
+		begin
+			if(y_counter >= y_pos && y_counter <(y_pos + 32))
+			begin
+				overlay_enable <=1'b1;
+			end
+		end
+	else
+		begin
+			overlay_enable <=1'b0;
+		end
+end
+
+endmodule
