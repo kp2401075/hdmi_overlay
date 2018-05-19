@@ -9,17 +9,23 @@ module i2c_writer  (
 	output reg       	SCLO,
 	output reg       	END_OK,
 	
-	//--for test 
+	
 	output reg [7:0] 	ST ,
 	output reg [7:0] 	CNT,
 	output reg [7:0] 	BYTE,
 	output reg       	ACK_OK,
-   input      [7:0]  BYTE_NUM  // 4 : 4 byte 	
+   input      [7:0]  BYTE_NUM  
 );
 
-//===reg/wire  
+
+
+
 reg   [8:0]A ;
 reg   [7:0]DELY ;
+
+////////State machine for i2c
+//based on terasic tutorial on youtube
+
 
 always @( negedge RESET_N or posedge  PT_CK )begin
 if (!RESET_N  ) ST <=0;
