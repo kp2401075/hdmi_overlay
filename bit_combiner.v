@@ -1,7 +1,7 @@
 module bit_combiner(
 	input [23:0] PPE_IN, 			// Pixel Processing Engine
 	input [23:0] OBR_IN,				// Overlay Bit Repeater
-	//input clk,							// clock in from higher entity
+
 	input overlay_enable,			// set this enable when you want this exact pixel produce an overlay
 	
 	output [23:0] pixel_data_out	// output pixel colour value
