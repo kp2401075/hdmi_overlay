@@ -1,0 +1,28 @@
+//hdmi_overlay 
+// revision 23/05/2018
+//Jay Patel
+module overlay(
+     
+      input              FPGA_CLK1_50,
+
+
+     
+      inout              HDMI_I2C_SCL,
+      inout              HDMI_I2C_SDA,
+
+      output             HDMI_TX_CLK,
+      output      [23:0] HDMI_TX_D,
+      output             HDMI_TX_DE,
+      output             HDMI_TX_HS,
+      input              HDMI_TX_INT,
+      output             HDMI_TX_VS,
+
+      
+      input       [1:0]  KEY,
+
+     
+      output      [7:0]  LED,
+
+    
+      input       [3:0]  SW
+);
